@@ -24,7 +24,9 @@ const els = {
 
   checkModifier: document.getElementById("check-modifier"),
   checkAccuracy: document.getElementById("check-accuracy"),
+  checkAccuracyAdd: document.getElementById("check-accuracy-add"),
   checkDifficulty: document.getElementById("check-difficulty"),
+  checkDifficultyAdd: document.getElementById("check-difficulty-add"),
   checkRollBtn: document.getElementById("check-roll-btn"),
 
   damageD6: document.getElementById("damage-d6"),
@@ -98,6 +100,33 @@ function formatRollTime(epochSeconds) {
   });
 }
 
+// event.text is the Discord-formatted string the bot posts, which only ever
+// uses **bold** and ~~strikethrough~~. Rendered by building real DOM nodes
+// (never innerHTML) so nothing in the text can be parsed as HTML.
+function appendLiteMarkdown(container, text) {
+  const lines = text.split("\n");
+  lines.forEach((line, i) => {
+    if (i > 0) {
+      container.appendChild(document.createElement("br"));
+    }
+    const re = /\*\*(.+?)\*\*|~~(.+?)~~/g;
+    let lastIndex = 0;
+    let match;
+    while ((match = re.exec(line)) !== null) {
+      if (match.index > lastIndex) {
+        container.appendChild(document.createTextNode(line.slice(lastIndex, match.index)));
+      }
+      const el = document.createElement(match[1] !== undefined ? "strong" : "s");
+      el.textContent = match[1] !== undefined ? match[1] : match[2];
+      container.appendChild(el);
+      lastIndex = re.lastIndex;
+    }
+    if (lastIndex < line.length) {
+      container.appendChild(document.createTextNode(line.slice(lastIndex)));
+    }
+  });
+}
+
 function addHistoryEntry(event) {
   const li = document.createElement("li");
 
@@ -114,12 +143,9 @@ function addHistoryEntry(event) {
     line1.appendChild(timeEl);
   }
 
-  // event.text is the same Discord-formatted string the bot posts (with
-  // **bold**/~~strikethrough~~ markup); shown as plain text for now rather
-  // than rendered, via textContent so nothing in it is ever parsed as HTML.
   const line2 = document.createElement("div");
   line2.className = "roll-text";
-  line2.textContent = event.text;
+  appendLiteMarkdown(line2, event.text);
 
   li.appendChild(line1);
   li.appendChild(line2);
@@ -231,6 +257,14 @@ els.rollBtn.addEventListener(
     });
   })
 );
+
+els.checkAccuracyAdd.addEventListener("click", () => {
+  els.checkAccuracy.value = (Number(els.checkAccuracy.value) || 0) + 1;
+});
+
+els.checkDifficultyAdd.addEventListener("click", () => {
+  els.checkDifficulty.value = (Number(els.checkDifficulty.value) || 0) + 1;
+});
 
 els.checkRollBtn.addEventListener(
   "click",
