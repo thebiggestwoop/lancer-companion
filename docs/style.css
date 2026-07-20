@@ -155,6 +155,11 @@ select {
   justify-content: center;
 }
 
+.step-btn-minor {
+  width: 16px;
+  font-size: 12px;
+}
+
 .modifier-input {
   width: 40px;
   height: 40px;
