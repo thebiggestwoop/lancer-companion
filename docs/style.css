@@ -155,9 +155,35 @@ select {
   justify-content: center;
 }
 
-.step-btn-minor {
-  width: 16px;
-  font-size: 12px;
+.dice-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stepper-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stack-btn {
+  width: 26px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stack-btn-plus {
+  height: 26px;
+  font-size: 16px;
+}
+
+.stack-btn-minus {
+  height: 12px;
+  font-size: 9px;
 }
 
 .modifier-input {
