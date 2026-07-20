@@ -189,6 +189,70 @@ select {
   color: var(--accent);
 }
 
+.text-tally-btn {
+  font-size: 12px;
+}
+
+.xdx-controls-row {
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.keep-crit-row {
+  align-items: center;
+  justify-content: space-between;
+  margin: 6px 0;
+}
+
+.keep-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.keep-field label {
+  font-size: 11px;
+  opacity: 0.8;
+}
+
+.keep-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.keep-btn {
+  border: none;
+  border-radius: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: transparent;
+}
+
+.keep-btn:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.keep-btn.active {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.d2-row {
+  align-items: stretch;
+}
+
+.quick-die-btn {
+  flex: 0 0 auto;
+  width: 48px;
+}
+
+.d2-row .btn-primary {
+  flex: 1;
+  width: auto;
+}
+
 button {
   border: 1px solid var(--border);
   border-radius: 4px;

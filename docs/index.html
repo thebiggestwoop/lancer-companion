@@ -68,39 +68,46 @@
 
   <section class="card">
     <h2>XdX</h2>
-    <div class="row">
-      <div class="field">
-        <label for="damage-d6">d6</label>
-        <input id="damage-d6" type="number" value="1" min="0" step="1" />
+    <div class="row xdx-controls-row">
+      <div class="stat-group">
+        <div class="tally-control">
+          <button id="damage-d6-add" class="tally-btn text-tally-btn" type="button" aria-label="Add d6">d6</button>
+          <input id="damage-d6" type="number" value="0" min="0" step="1" class="tally-input" />
+        </div>
       </div>
-      <div class="field">
-        <label for="damage-d3">d3</label>
-        <input id="damage-d3" type="number" value="0" min="0" step="1" />
+      <div class="stat-group">
+        <div class="tally-control">
+          <button id="damage-d3-add" class="tally-btn text-tally-btn" type="button" aria-label="Add d3">d3</button>
+          <input id="damage-d3" type="number" value="0" min="0" step="1" class="tally-input" />
+        </div>
       </div>
-      <div class="field">
+      <div class="stat-group">
         <label for="damage-flat">Flat</label>
-        <input id="damage-flat" type="number" value="0" step="1" />
+        <div class="modifier-control">
+          <button id="damage-flat-minus" class="step-btn" type="button" aria-label="Decrease Flat">&minus;</button>
+          <input id="damage-flat" type="text" inputmode="numeric" value="+0" class="modifier-input" />
+          <button id="damage-flat-plus" class="step-btn" type="button" aria-label="Increase Flat">+</button>
+        </div>
       </div>
     </div>
-    <div class="row">
-      <div class="field">
-        <label for="damage-keep-mode">Keep (d6 only)</label>
-        <select id="damage-keep-mode">
-          <option value="">All</option>
-          <option value="h">Highest</option>
-          <option value="l">Lowest</option>
-        </select>
+    <div class="row keep-crit-row">
+      <div class="keep-field">
+        <label>Keep</label>
+        <div class="keep-toggle" role="group" aria-label="Keep">
+          <button id="damage-keep-all" class="keep-btn active" type="button" data-keep="">All</button>
+          <button id="damage-keep-high" class="keep-btn" type="button" data-keep="h">High</button>
+          <button id="damage-keep-low" class="keep-btn" type="button" data-keep="l">Low</button>
+        </div>
       </div>
-      <div class="field">
-        <label for="damage-keep-count">Keep count</label>
-        <input id="damage-keep-count" type="number" value="1" min="1" step="1" />
-      </div>
+      <label class="checkbox-field">
+        <input id="damage-crit" type="checkbox" />
+        Crit
+      </label>
     </div>
-    <label class="checkbox-field">
-      <input id="damage-crit" type="checkbox" />
-      Crit (roll twice, keep higher)
-    </label>
-    <button id="damage-roll-btn" class="btn-primary">Roll Damage</button>
+    <div class="row d2-row">
+      <button id="damage-d2-btn" class="quick-die-btn" type="button">d2</button>
+      <button id="damage-roll-btn" class="btn-primary">Roll</button>
+    </div>
   </section>
 
   <details id="advanced-details">

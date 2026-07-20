@@ -32,11 +32,17 @@ const els = {
   checkRollBtn: document.getElementById("check-roll-btn"),
 
   damageD6: document.getElementById("damage-d6"),
+  damageD6Add: document.getElementById("damage-d6-add"),
   damageD3: document.getElementById("damage-d3"),
+  damageD3Add: document.getElementById("damage-d3-add"),
   damageFlat: document.getElementById("damage-flat"),
-  damageKeepMode: document.getElementById("damage-keep-mode"),
-  damageKeepCount: document.getElementById("damage-keep-count"),
+  damageFlatMinus: document.getElementById("damage-flat-minus"),
+  damageFlatPlus: document.getElementById("damage-flat-plus"),
+  damageKeepAll: document.getElementById("damage-keep-all"),
+  damageKeepHigh: document.getElementById("damage-keep-high"),
+  damageKeepLow: document.getElementById("damage-keep-low"),
   damageCrit: document.getElementById("damage-crit"),
+  damageD2Btn: document.getElementById("damage-d2-btn"),
   damageRollBtn: document.getElementById("damage-roll-btn"),
 };
 
@@ -66,13 +72,17 @@ function buildCheckExpression(modifier, accuracy, difficulty) {
   return parts.join(" ");
 }
 
-function buildDamageExpression(numD6, keepMode, keepCount, numD3, flat, crit) {
+// Keep (highest/lowest 1) applies independently to whichever die pools have
+// dice in them -- e.g. 2d6 + 1d3 with Keep: High keeps the highest of the
+// 2d6 *and* the highest of the 1d3 (trivially itself), not a single winner
+// picked across the combined pool.
+function buildDamageExpression(numD6, numD3, flat, keepMode, crit) {
   const diceParts = [];
   if (numD6 > 0) {
-    diceParts.push(keepMode ? `${numD6}d6k${keepMode}${keepCount}` : `${numD6}d6`);
+    diceParts.push(keepMode ? `${numD6}d6k${keepMode}1` : `${numD6}d6`);
   }
   if (numD3 > 0) {
-    diceParts.push(`${numD3}d3`);
+    diceParts.push(keepMode ? `${numD3}d3k${keepMode}1` : `${numD3}d3`);
   }
   if (diceParts.length === 0 && !flat) {
     throw new Error("Enter at least one die or a flat bonus.");
@@ -306,16 +316,56 @@ els.checkRollBtn.addEventListener(
   })
 );
 
+els.damageD6Add.addEventListener("click", () => {
+  els.damageD6.value = (Number(els.damageD6.value) || 0) + 1;
+});
+
+els.damageD3Add.addEventListener("click", () => {
+  els.damageD3.value = (Number(els.damageD3.value) || 0) + 1;
+});
+
+els.damageFlatMinus.addEventListener("click", () => {
+  els.damageFlat.value = formatModifier(parseModifier(els.damageFlat.value) - 1);
+});
+
+els.damageFlatPlus.addEventListener("click", () => {
+  els.damageFlat.value = formatModifier(parseModifier(els.damageFlat.value) + 1);
+});
+
+els.damageFlat.addEventListener("blur", () => {
+  els.damageFlat.value = formatModifier(parseModifier(els.damageFlat.value));
+});
+
+let damageKeepMode = "";
+const keepButtons = [els.damageKeepAll, els.damageKeepHigh, els.damageKeepLow];
+
+function setDamageKeepMode(mode) {
+  damageKeepMode = mode;
+  keepButtons.forEach((btn) => btn.classList.toggle("active", btn.dataset.keep === mode));
+}
+
+els.damageKeepAll.addEventListener("click", () => setDamageKeepMode(""));
+els.damageKeepHigh.addEventListener("click", () => setDamageKeepMode("h"));
+els.damageKeepLow.addEventListener("click", () => setDamageKeepMode("l"));
+
+els.damageD2Btn.addEventListener(
+  "click",
+  withBusy(els.damageD2Btn, async () => {
+    await postJson(`/api/${pairingCode}/roll`, {
+      expression: "1d2",
+      player_name: playerName,
+    });
+  })
+);
+
 els.damageRollBtn.addEventListener(
   "click",
   withBusy(els.damageRollBtn, async () => {
     const numD6 = Math.max(0, Number(els.damageD6.value) || 0);
     const numD3 = Math.max(0, Number(els.damageD3.value) || 0);
-    const flat = Number(els.damageFlat.value) || 0;
-    const keepMode = els.damageKeepMode.value || null;
-    const keepCount = Math.max(1, Number(els.damageKeepCount.value) || 1);
+    const flat = parseModifier(els.damageFlat.value);
     const crit = els.damageCrit.checked;
-    const expression = buildDamageExpression(numD6, keepMode, keepCount, numD3, flat, crit);
+    const expression = buildDamageExpression(numD6, numD3, flat, damageKeepMode, crit);
     await postJson(`/api/${pairingCode}/roll`, {
       expression,
       player_name: playerName,
