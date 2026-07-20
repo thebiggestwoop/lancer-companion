@@ -28,36 +28,42 @@
 
   <section class="card">
     <h2>d20</h2>
-    <div class="row">
-      <div class="field">
+    <div class="row d20-controls-row">
+      <div class="stat-group">
         <label for="check-modifier">Modifier</label>
-        <input id="check-modifier" type="number" value="0" step="1" />
+        <div class="modifier-control">
+          <button id="check-modifier-minus" class="step-btn" type="button" aria-label="Decrease Modifier">&minus;</button>
+          <input id="check-modifier" type="text" inputmode="numeric" value="+0" class="modifier-input" />
+          <button id="check-modifier-plus" class="step-btn" type="button" aria-label="Increase Modifier">+</button>
+        </div>
       </div>
-    </div>
-    <div class="row acc-diff-row">
-      <div class="tally-field">
-        <button id="check-accuracy-add" class="tally-btn" type="button" aria-label="Add Accuracy">
-          <svg viewBox="0 0 100 100" class="tally-icon" aria-hidden="true">
-            <polygon points="90,50 70,84.64 30,84.64 10,50 30,15.36 70,15.36" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
-            <rect x="42" y="28" width="16" height="44" fill="currentColor"/>
-            <rect x="28" y="42" width="44" height="16" fill="currentColor"/>
-          </svg>
-        </button>
+      <div class="stat-group">
         <label for="check-accuracy">Accuracy</label>
-        <input id="check-accuracy" type="number" value="0" min="0" step="1" />
+        <div class="tally-control">
+          <button id="check-accuracy-add" class="tally-btn" type="button" aria-label="Add Accuracy">
+            <svg viewBox="0 0 100 100" class="tally-icon" aria-hidden="true">
+              <polygon points="90,50 70,84.64 30,84.64 10,50 30,15.36 70,15.36" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
+              <rect x="42" y="28" width="16" height="44" fill="currentColor"/>
+              <rect x="28" y="42" width="44" height="16" fill="currentColor"/>
+            </svg>
+          </button>
+          <input id="check-accuracy" type="number" value="0" min="0" step="1" class="tally-input" />
+        </div>
       </div>
-      <div class="tally-field">
-        <button id="check-difficulty-add" class="tally-btn" type="button" aria-label="Add Difficulty">
-          <svg viewBox="0 0 100 100" class="tally-icon" aria-hidden="true">
-            <polygon points="90,50 70,84.64 30,84.64 10,50 30,15.36 70,15.36" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
-            <rect x="28" y="42" width="44" height="16" fill="currentColor"/>
-          </svg>
-        </button>
+      <div class="stat-group">
         <label for="check-difficulty">Difficulty</label>
-        <input id="check-difficulty" type="number" value="0" min="0" step="1" />
+        <div class="tally-control">
+          <button id="check-difficulty-add" class="tally-btn" type="button" aria-label="Add Difficulty">
+            <svg viewBox="0 0 100 100" class="tally-icon" aria-hidden="true">
+              <polygon points="90,50 70,84.64 30,84.64 10,50 30,15.36 70,15.36" fill="none" stroke="currentColor" stroke-width="8" stroke-linejoin="round"/>
+              <rect x="28" y="42" width="44" height="16" fill="currentColor"/>
+            </svg>
+          </button>
+          <input id="check-difficulty" type="number" value="0" min="0" step="1" class="tally-input" />
+        </div>
       </div>
     </div>
-    <button id="check-roll-btn" class="btn-primary">Roll Check</button>
+    <button id="check-roll-btn" class="btn-primary">Roll d20</button>
   </section>
 
   <section class="card">

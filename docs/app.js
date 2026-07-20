@@ -23,6 +23,8 @@ const els = {
   rollBtn: document.getElementById("roll-btn"),
 
   checkModifier: document.getElementById("check-modifier"),
+  checkModifierMinus: document.getElementById("check-modifier-minus"),
+  checkModifierPlus: document.getElementById("check-modifier-plus"),
   checkAccuracy: document.getElementById("check-accuracy"),
   checkAccuracyAdd: document.getElementById("check-accuracy-add"),
   checkDifficulty: document.getElementById("check-difficulty"),
@@ -42,6 +44,18 @@ const els = {
 // they build the same expression string the Discord `l!r` command and the
 // Advanced text box produce, then send it through the one /roll endpoint.
 // That keeps the parsing/validation logic in exactly one place (lancer_logic.py).
+// The Modifier field always shows an explicit sign ("+0", "+3", "-2"), so it
+// has to be a plain text input -- a type="number" input silently rejects a
+// leading "+" as an invalid value.
+function parseModifier(raw) {
+  const n = parseInt(String(raw).replace(/^\+/, ""), 10);
+  return Number.isNaN(n) ? 0 : n;
+}
+
+function formatModifier(n) {
+  return n >= 0 ? `+${n}` : `${n}`;
+}
+
 function buildCheckExpression(modifier, accuracy, difficulty) {
   const parts = ["d20"];
   if (modifier) {
@@ -258,6 +272,18 @@ els.rollBtn.addEventListener(
   })
 );
 
+els.checkModifierMinus.addEventListener("click", () => {
+  els.checkModifier.value = formatModifier(parseModifier(els.checkModifier.value) - 1);
+});
+
+els.checkModifierPlus.addEventListener("click", () => {
+  els.checkModifier.value = formatModifier(parseModifier(els.checkModifier.value) + 1);
+});
+
+els.checkModifier.addEventListener("blur", () => {
+  els.checkModifier.value = formatModifier(parseModifier(els.checkModifier.value));
+});
+
 els.checkAccuracyAdd.addEventListener("click", () => {
   els.checkAccuracy.value = (Number(els.checkAccuracy.value) || 0) + 1;
 });
@@ -269,7 +295,7 @@ els.checkDifficultyAdd.addEventListener("click", () => {
 els.checkRollBtn.addEventListener(
   "click",
   withBusy(els.checkRollBtn, async () => {
-    const modifier = Number(els.checkModifier.value) || 0;
+    const modifier = parseModifier(els.checkModifier.value);
     const accuracy = Math.max(0, Number(els.checkAccuracy.value) || 0);
     const difficulty = Math.max(0, Number(els.checkDifficulty.value) || 0);
     const expression = buildCheckExpression(modifier, accuracy, difficulty);
