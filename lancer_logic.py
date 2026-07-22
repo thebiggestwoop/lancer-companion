@@ -245,6 +245,78 @@ def result_to_json_safe(result):
 # Discord formatting
 # ---------------------------------------------------------------------------
 
+# Emojis for d20 rolls (mirrors the Ascension bot's game_logic.py).
+d20_emojis = {
+    1: '<:d20_1:1529575608642703380>',
+    2: '<:d20_2:1529575610546917417>',
+    3: '<:d20_3:1529575612560310406>',
+    4: '<:d20_4:1529575613885841498>',
+    5: '<:d20_5:1529575615169171637>',
+    6: '<:d20_6:1529575616817664130>',
+    7: '<:d20_7:1529575618088271973>',
+    8: '<:d20_8:1529575620659380364>',
+    9: '<:d20_9:1529575621947162795>',
+    10: '<:d20_10:1529575623071109242>',
+    11: '<:d20_11:1529575624891433021>',
+    12: '<:d20_12:1529575626300985364>',
+    13: '<:d20_13:1529575627576053770>',
+    14: '<:d20_14:1529575628364578827>',
+    15: '<:d20_15:1529575630243364915>',
+    16: '<:d20_16:1529575631627485224>',
+    17: '<:d20_17:1529575633108340839>',
+    18: '<:d20_18:1529575634685395214>',
+    19: '<:d20_19:1529575635956007073>',
+    20: '<:d20_20:1529575637210108055>',
+}
+
+# Emojis for d6 rolls -- also used for d3 and d2, since their faces (1-3,
+# 1-2) are always within d6's 1-6 range.
+d6_emojis = {
+    1: '<:d6_1:1529575918102904902>',
+    2: '<:d6_2:1529575919755202630>',
+    3: '<:d6_3:1529575920976003284>',
+    4: '<:d6_4:1529575922469179535>',
+    5: '<:d6_5:1529575923639124029>',
+    6: '<:d6_6:1529575924851544094>',
+}
+
+_EMOJI_CHUNK_SIZE = 2000  # Discord's message character limit
+
+
+def _die_emoji(sides, face):
+    """The emoji for a single die face. d20 gets its own set; every other
+    die size (d6, d3, d2, ...) uses the d6 emoji."""
+    if sides == 20:
+        return d20_emojis[face]
+    return d6_emojis[face]
+
+
+def _chunk_emoji_string(emoji_string):
+    return [
+        emoji_string[i:i + _EMOJI_CHUNK_SIZE]
+        for i in range(0, len(emoji_string), _EMOJI_CHUNK_SIZE)
+    ]
+
+
+def roll_emoji_chunks(result):
+    """All the dice from one roll -- the d20 AND any Accuracy/Difficulty
+    bonus d6s for a check, or every term's dice (plus both attempts, if a
+    crit rolled twice) for a damage roll -- as a single emoji string, split
+    into Discord-message-sized chunks. Everything from one command lands
+    in the same message line instead of one message per die type."""
+    if result["mode"] == "check":
+        emojis = [d20_emojis[result["d20"]]]
+        emojis.extend(d6_emojis[roll] for roll in result["bonus_dice"])
+    else:
+        emojis = [
+            _die_emoji(sides, roll)
+            for attempt in result["attempts"]
+            for sides, rolls, _ in attempt["rolls_by_term"]
+            for roll in rolls
+        ]
+    return _chunk_emoji_string("".join(emojis))
+
+
 def _signed(value):
     return f"+ {value}" if value >= 0 else f"- {abs(value)}"
 

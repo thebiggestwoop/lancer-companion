@@ -48,6 +48,10 @@ async def roll(ctx, *, expression: str):
         await ctx.send(f"{ctx.author.mention}\n**Error:** {e}")
         return
 
+    # Sent emoji-only (no text) so Discord renders the dice faces at large size
+    for chunk in ll.roll_emoji_chunks(result):
+        await ctx.send(chunk)
+
     text = ll.format_roll_discord(result)
     await ctx.send(f"{ctx.author.mention}\n{text}")
 
