@@ -52,8 +52,10 @@ async def roll(ctx, *, expression: str):
     for chunk in ll.roll_emoji_chunks(result):
         await ctx.send(chunk)
 
-    text = ll.format_roll_discord_shouted(result)
-    await ctx.send(f"{ctx.author.mention}\n{text}")
+    text = ll.format_roll_discord(result)
+    title = result.get("title")
+    header = f"{ctx.author.mention} **: {title}**" if title else ctx.author.mention
+    await ctx.send(f"{header}\n{text}")
 
     event_bus.publish(ctx.guild.id, {
         "type": "roll",

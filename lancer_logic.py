@@ -545,11 +545,11 @@ def format_check_discord(result):
 
     equation = " ".join(pieces)
 
-    total_line = f"**Total:** {result['total']}"
+    total_line = f"**TOTAL:** {result['total']}"
     if result["is_crit"]:
         total_line += " -- CRIT!"
 
-    return f"**Result:** {equation}\n{total_line}"
+    return f"**RESULT:** {equation}\n{total_line}"
 
 
 def _describe_damage_attempt(attempt):
@@ -558,11 +558,11 @@ def _describe_damage_attempt(attempt):
         rolls_str = _format_dice_with_kept(rolls, kept_indices, discarded)
         dice_pieces.append(f"{len(rolls)}d{sides} ({rolls_str})")
         # Combat Drill bonus dice always count in full -- shown as their own
-        # "1d6 (bonus, ...)" piece each, with their own reroll chain if the
+        # "1d6 (BONUS, ...)" piece each, with their own reroll chain if the
         # bonus die itself triggered further Overkill/Combat Drill rerolls.
         for bonus_face, bonus_discarded, _ in bonus_dice:
             bonus_str = _format_dice_with_kept([bonus_face], {0}, [bonus_discarded])
-            dice_pieces.append(f"1d6 (bonus, {bonus_str})")
+            dice_pieces.append(f"1d6 (BONUS, {bonus_str})")
 
     equation = " + ".join(dice_pieces)
     if attempt["flat"]:
@@ -576,7 +576,7 @@ def format_damage_discord(result):
     # (format_check_discord's is_crit) -- a damage roll's own "crit" flag
     # just means its dice mechanic doubled, so it isn't re-announced here.
     equation = _describe_damage_attempt(result["attempts"][0])
-    lines = [f"**Result:** {equation}"]
+    lines = [f"**RESULT:** {equation}"]
     # Combat Drill's bonus dice count toward the total, so it's reported
     # before Total (explaining where the extra damage came from); Overkill's
     # Heat is a cost, not damage, so it's reported after, as a side effect.
@@ -584,32 +584,24 @@ def format_damage_discord(result):
         bonus_count = sum(
             len(bonus_dice) for _, _, _, _, bonus_dice in result["attempts"][0]["rolls_by_term"]
         )
-        lines.append(f"**Combat Drill:** {bonus_count} bonus 1d6")
-    lines.append(f"**Total:** {result['total']}")
+        lines.append(f"**COMBAT DRILL:** {bonus_count} BONUS 1d6")
+    lines.append(f"**TOTAL:** {result['total']}")
     if result.get("overkill"):
-        lines.append(f"**Overkill:** {result['heat']} Heat")
+        lines.append(f"**OVERKILL:** {result['heat']} HEAT")
     return "\n".join(lines)
 
 
 def format_roll_discord(result):
+    """The bot's spoken text for a roll -- labels ("RESULT"/"TOTAL"/
+    "OVERKILL"/"COMBAT DRILL"/"HEAT"/"BONUS"/"CRIT") are hardcoded upper
+    case at the source above, same text either way (Discord command or
+    Owlbear extension); dice notation ("2d6", "1d20", "6d6kh1", ...) is
+    hardcoded lowercase, since it's notation, not the bot talking.
+
+    Doesn't include the title (result["title"]) -- that's shown alongside
+    whoever made the roll (mention/attribution), on the header line above
+    this text, not as part of the roll body itself. See lancer_bot.py /
+    web_api.py."""
     if result["mode"] == "check":
         return format_check_discord(result)
     return format_damage_discord(result)
-
-
-_DICE_NOTATION_RE = re.compile(r"\d+D\d+(?:K[HL]\d+)?")
-
-
-def format_roll_discord_shouted(result):
-    """format_roll_discord(), but in all caps -- the bot speaks its roll
-    results in all caps (same text either way, Discord command or Owlbear
-    extension), except dice notation ("2d6", "1d20", "6d6kh1", ...) stays
-    lowercase so it still reads as dice notation rather than "2D6"/"6D6KH1".
-
-    The title (if any) is a name the player chose -- like the pairing code
-    or a player's own name, it's data, not the bot "speaking" -- so it's
-    prepended after shouting rather than swept into the all-caps treatment."""
-    shouted = format_roll_discord(result).upper()
-    fixed = _DICE_NOTATION_RE.sub(lambda m: m.group(0).lower(), shouted)
-    title = result.get("title")
-    return f"**{title}**\n{fixed}" if title else fixed

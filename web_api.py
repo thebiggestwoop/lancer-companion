@@ -88,7 +88,7 @@ def create_app(bot, pairing_codes):
             return web.json_response({"error": "result is required."}, status=400)
 
         actor = data.get("player_name") or "Someone"
-        text = ll.format_roll_discord_shouted(result)
+        text = ll.format_roll_discord(result)
 
         channel = await _get_channel(bot, pairing["channel_id"])
 
@@ -97,10 +97,13 @@ def create_app(bot, pairing_codes):
         for chunk in ll.roll_emoji_chunks(result):
             await channel.send(chunk)
 
-        # _attribution() is the one exception left un-uppercased -- it's
-        # just the "(via Owlbear)" note next to the player's name, not the
-        # bot speaking.
-        await channel.send(f"{_attribution(actor)}\n{text}")
+        # _attribution() itself is plain case -- it's just the "(via
+        # Owlbear)" note next to the player's name, not the bot speaking.
+        # The title (if any) rides on the same header line, separated by
+        # ": " rather than its own line.
+        title = result.get("title")
+        header = f"{_attribution(actor)} **: {title}**" if title else _attribution(actor)
+        await channel.send(f"{header}\n{text}")
 
         return web.json_response({"ok": True})
 

@@ -11,12 +11,12 @@
 // Discord-bound text formatting is NOT the source of truth from here --
 // when paired, the bot re-derives the Discord message from the structured
 // `result` this module produces, using lancer_logic.py's own (unmodified)
-// format_roll_discord_shouted()/roll_emoji_chunks(). The formatting
-// functions here exist only to render the extension's own Roll History
-// entry instantly, without waiting on a round trip, so they only need to
-// look reasonable locally -- any cosmetic drift from the Python formatter
-// can never cause a numeric mismatch, since the actual rolled numbers are
-// decided once, client-side, before either formatter ever runs.
+// format_roll_discord()/roll_emoji_chunks(). The formatting functions here
+// exist only to render the extension's own Roll History entry instantly,
+// without waiting on a round trip, so they only need to look reasonable
+// locally -- any cosmetic drift from the Python formatter can never cause
+// a numeric mismatch, since the actual rolled numbers are decided once,
+// client-side, before either formatter ever runs.
 
 const MAX_ACC_DIFF = 20;
 const MAX_DAMAGE_DICE = 50;
@@ -374,11 +374,11 @@ function formatCheckDiscord(result) {
   }
   const equation = pieces.join(" ");
 
-  let totalLine = `**Total:** ${result.total}`;
+  let totalLine = `**TOTAL:** ${result.total}`;
   if (result.is_crit) {
     totalLine += " -- CRIT!";
   }
-  return `**Result:** ${equation}\n${totalLine}`;
+  return `**RESULT:** ${equation}\n${totalLine}`;
 }
 
 function describeDamageAttempt(attempt) {
@@ -388,7 +388,7 @@ function describeDamageAttempt(attempt) {
     dicePieces.push(`${rolls.length}d${sides} (${rollsStr})`);
     for (const [bonusFace, bonusDiscarded] of bonus_dice) {
       const bonusStr = formatDiceWithKept([bonusFace], new Set([0]), [bonusDiscarded]);
-      dicePieces.push(`1d6 (bonus, ${bonusStr})`);
+      dicePieces.push(`1d6 (BONUS, ${bonusStr})`);
     }
   }
 
@@ -402,33 +402,31 @@ function describeDamageAttempt(attempt) {
 
 function formatDamageDiscord(result) {
   const equation = describeDamageAttempt(result.attempts[0]);
-  const lines = [`**Result:** ${equation}`];
+  const lines = [`**RESULT:** ${equation}`];
   if (result.combat_drill) {
     let bonusCount = 0;
     for (const [, , , , bonus_dice] of result.attempts[0].rolls_by_term) {
       bonusCount += bonus_dice.length;
     }
-    lines.push(`**Combat Drill:** ${bonusCount} bonus 1d6`);
+    lines.push(`**COMBAT DRILL:** ${bonusCount} BONUS 1d6`);
   }
-  lines.push(`**Total:** ${result.total}`);
+  lines.push(`**TOTAL:** ${result.total}`);
   if (result.overkill) {
-    lines.push(`**Overkill:** ${result.heat} Heat`);
+    lines.push(`**OVERKILL:** ${result.heat} HEAT`);
   }
   return lines.join("\n");
 }
 
-function formatRollDiscord(result) {
+// Mirrors format_roll_discord(): labels ("RESULT"/"TOTAL"/"OVERKILL"/
+// "COMBAT DRILL"/"HEAT"/"BONUS"/"CRIT") are hardcoded upper case at the
+// source above, same text either way (Discord command or Owlbear
+// extension); dice notation ("2d6", "1d20", "6d6kh1", ...) is hardcoded
+// lowercase, since it's notation, not the bot talking.
+//
+// Doesn't include the title (result.title) -- that's shown alongside
+// whoever made the roll, on the header line above this text, not as part
+// of the roll body itself. See performLocalRoll()/addHistoryEntry() in
+// app.js.
+export function formatRollDiscord(result) {
   return result.mode === "check" ? formatCheckDiscord(result) : formatDamageDiscord(result);
-}
-
-const DICE_NOTATION_RE = /\d+D\d+(?:K[HL]\d+)?/g;
-
-// Mirrors format_roll_discord_shouted(). The title (if any) is a name the
-// player chose -- like the pairing code or a player's own name, it's data,
-// not the bot "speaking", so it's prepended after shouting rather than
-// swept into the all-caps treatment.
-export function formatRollDiscordShouted(result) {
-  const shouted = formatRollDiscord(result).toUpperCase();
-  const fixed = shouted.replace(DICE_NOTATION_RE, (m) => m.toLowerCase());
-  return result.title ? `**${result.title}**\n${fixed}` : fixed;
 }

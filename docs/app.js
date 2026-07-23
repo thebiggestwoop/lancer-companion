@@ -393,6 +393,12 @@ function addHistoryEntry(event) {
   line1.appendChild(actorEl);
   const sourceTag = event.source === "discord" ? "Discord" : "Owlbear";
   line1.appendChild(document.createTextNode(` (${sourceTag})`));
+  if (event.title) {
+    line1.appendChild(document.createTextNode(" "));
+    const titleEl = document.createElement("strong");
+    titleEl.textContent = `: ${event.title}`;
+    line1.appendChild(titleEl);
+  }
   if (typeof event.timestamp === "number") {
     const timeEl = document.createElement("span");
     timeEl.className = "roll-time";
@@ -538,7 +544,7 @@ async function performLocalRoll(expression, titleOverride) {
   if (!result.title && titleOverride) {
     result.title = titleOverride;
   }
-  const text = diceLogic.formatRollDiscordShouted(result);
+  const text = diceLogic.formatRollDiscord(result);
   const safeResult = diceLogic.toJsonSafe(result);
   const event = {
     type: "roll",
