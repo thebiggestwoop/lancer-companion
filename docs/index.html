@@ -13,10 +13,16 @@
 
   <details id="settings-details">
     <summary>Settings</summary>
-    <label class="checkbox-field">
-      <input id="pair-discord-setting" type="checkbox" checked />
-      Pair with Discord
-    </label>
+    <div class="row settings-links-row">
+      <label class="checkbox-field">
+        <input id="pair-discord-setting" type="checkbox" checked />
+        Pair with Discord
+      </label>
+      <div class="settings-links">
+        <a href="https://discord.com/oauth2/authorize?client_id=1528810293663371464&scope=bot&permissions=330752" target="_blank" rel="noopener noreferrer">Add to Discord</a>
+        <a href="https://github.com/thebiggestwoop/lancer-companion" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </div>
+    </div>
     <div class="field">
       <label for="pairing-code">Pairing code</label>
       <input id="pairing-code" type="text" placeholder="from l!link in Discord" />
@@ -31,6 +37,11 @@
       <input id="show-dice-icons-setting" type="checkbox" checked />
       Show Dice Icons
     </label>
+    <div class="row">
+      <button id="export-saved-rolls-btn" type="button">Export saved rolls</button>
+      <button id="import-saved-rolls-btn" type="button">Import saved rolls</button>
+      <input id="import-saved-rolls-file" type="file" accept="application/json,.json" class="hidden" />
+    </div>
     <div class="row">
       <button id="clear-saved-rolls-btn" type="button">Clear all saved rolls</button>
       <button id="confirm-clear-saved-rolls-btn" type="button" class="confirm-danger-btn hidden">Are you sure?</button>

@@ -147,6 +147,32 @@ select {
   cursor: pointer;
 }
 
+.settings-links-row {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-links {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.settings-links a {
+  display: inline-block;
+  background: var(--accent-2);
+  color: #ffffff;
+  border: 1px solid var(--accent-2);
+  padding: 4px 8px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.settings-links a:hover {
+  filter: brightness(1.1);
+}
+
 .checkbox-field input {
   width: auto;
   accent-color: var(--accent-2);

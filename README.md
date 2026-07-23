@@ -41,7 +41,9 @@ Uses its own bot application and a distinct command prefix (`l!`), so it can coe
 - `combatdrill` — implies `overkill`, and also deals an extra +1d6 bonus damage each time Overkill activates, chaining indefinitely if that bonus die is also a 1.
 - Hand-typed `XdYkhN` / `XdYklN` (keep highest/lowest N of X) is also accepted.
 
-Dice results are sent as **emoji-only messages** — Discord renders a message as large emoji only when it contains nothing else — followed by a separate text summary, shouted in **ALL CAPS** except the dice notation itself (`2d6`, not `2D6`), so it still reads correctly.
+**Titles** — any trailing word(s) that aren't recognized dice/keyword syntax become a title for the roll (up to 30 characters), shown on their own line above the result: `l!r d20 + 3 Rifle` replies with a `**Rifle**` line before the usual result. In the Owlbear extension, rolling from the d20/XdX cards with a saved roll selected uses that saved roll's name as the title automatically.
+
+Dice results are sent as **emoji-only messages** — Discord renders a message as large emoji only when it contains nothing else — followed by a separate text summary, shouted in **ALL CAPS** except the dice notation itself (`2d6`, not `2D6`) and the title (shown as typed/selected), so both still read correctly.
 
 ### Game logic (`lancer_logic.py`)
 

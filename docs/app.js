@@ -26,6 +26,9 @@ const els = {
   resetAllBtn: document.getElementById("reset-all-btn"),
   showCombatDrillSetting: document.getElementById("show-combat-drill-setting"),
   showDiceIconsSetting: document.getElementById("show-dice-icons-setting"),
+  exportSavedRollsBtn: document.getElementById("export-saved-rolls-btn"),
+  importSavedRollsBtn: document.getElementById("import-saved-rolls-btn"),
+  importSavedRollsFile: document.getElementById("import-saved-rolls-file"),
   clearSavedRollsBtn: document.getElementById("clear-saved-rolls-btn"),
   confirmClearSavedRollsBtn: document.getElementById("confirm-clear-saved-rolls-btn"),
 
@@ -523,8 +526,18 @@ function withBusy(button, fn) {
 // paired -- separately asks the bot to also post it to the linked Discord
 // channel. A failed announce doesn't touch the roll that already
 // happened; it's surfaced as a soft warning (see withBusy) instead.
-async function performLocalRoll(expression) {
+// titleOverride is used by the structured d20/XdX cards: they build a
+// purely numeric/keyword expression (never trailing title text), so if a
+// saved roll is currently selected, its name becomes the title instead --
+// same idea as the bot parsing "d20 + 3 Rifle" as titled "Rifle", just
+// coming from the dropdown instead of typed text. Ignored if the
+// expression itself already parsed out a title (e.g. hand-typed in the
+// Advanced box).
+async function performLocalRoll(expression, titleOverride) {
   const result = diceLogic.performRoll(expression);
+  if (!result.title && titleOverride) {
+    result.title = titleOverride;
+  }
   const text = diceLogic.formatRollDiscordShouted(result);
   const safeResult = diceLogic.toJsonSafe(result);
   const event = {
@@ -605,13 +618,10 @@ els.checkRollBtn.addEventListener(
     const accuracy = Math.max(0, Number(els.checkAccuracy.value) || 0);
     const difficulty = Math.max(0, Number(els.checkDifficulty.value) || 0);
     const expression = buildCheckExpression(modifier, accuracy, difficulty);
-    const warning = await performLocalRoll(expression);
-    // Clear the saved-roll selection once it's actually been rolled, so
-    // picking the same saved roll again afterward fires a fresh "change"
-    // event instead of silently no-oping (browsers only fire "change" when
-    // the picked value differs from before).
-    els.savedRollsSelect.value = "";
-    return warning;
+    // Whatever's currently selected in the saved-rolls dropdown becomes the
+    // roll's title -- the selection is left alone (not reset) so it stays
+    // available as a title for repeated rolls/re-rolls.
+    return performLocalRoll(expression, els.savedRollsSelect.value);
   })
 );
 
@@ -778,6 +788,12 @@ els.resetAllBtn.addEventListener("click", () => {
   els.damageCombatDrill.checked = false;
   els.damageOverkill.checked = false;
   els.rollExpression.value = "";
+  // Resets the dropdowns' current *selection* back to the placeholder --
+  // the saved rolls themselves (the actual data) are untouched, same as
+  // everything else in here; only "Clear all saved rolls" in Settings
+  // deletes saved rolls.
+  els.savedRollsSelect.value = "";
+  els.damageSavedRollsSelect.value = "";
   setStatus(els.globalStatus, "", false);
 });
 
@@ -796,12 +812,9 @@ els.damageRollBtn.addEventListener(
     const overkill = els.damageOverkill.checked;
     const combatDrill = els.damageCombatDrill.checked;
     const expression = buildDamageExpression(numD6, numD3, flat, damageKeepMode, crit, overkill, combatDrill);
-    const warning = await performLocalRoll(expression);
-    // Same reasoning as the d20 card's saved rolls: clear the selection only
-    // once it's actually been rolled, so picking the same saved roll again
-    // afterward fires a fresh "change" event.
-    els.damageSavedRollsSelect.value = "";
-    return warning;
+    // Same reasoning as the d20 card: whatever's selected becomes the title,
+    // and the selection is left alone rather than reset.
+    return performLocalRoll(expression, els.damageSavedRollsSelect.value);
   })
 );
 
@@ -897,6 +910,93 @@ els.damageDeleteRollBtn.addEventListener("click", () => {
   savedDamageRolls = savedDamageRolls.filter((r) => r.name !== name);
   localStorage.setItem(SAVED_DAMAGE_ROLLS_STORAGE_KEY, JSON.stringify(savedDamageRolls));
   renderSavedDamageRolls();
+});
+
+// Export/Import saved rolls -- lets a player back up their saved d20/XdX
+// presets or move them to another browser, since they otherwise only live
+// in this browser's localStorage. Import merges into whatever's already
+// saved here (overwriting by name, same rule the Save Roll buttons already
+// use), rather than replacing it outright.
+els.exportSavedRollsBtn.addEventListener(
+  "click",
+  withBusy(els.exportSavedRollsBtn, () => {
+    const payload = {
+      d20Rolls: savedRolls,
+      damageRolls: savedDamageRolls,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "lancer-companion-saved-rolls.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  })
+);
+
+els.importSavedRollsBtn.addEventListener("click", () => {
+  els.importSavedRollsFile.click();
+});
+
+// Not routed through withBusy -- it always clears the status line on
+// success, and this needs to show a "here's what got imported" summary
+// instead.
+els.importSavedRollsFile.addEventListener("change", async () => {
+  const file = els.importSavedRollsFile.files[0];
+  els.importSavedRollsFile.value = "";
+  if (!file) return;
+
+  els.importSavedRollsBtn.disabled = true;
+  try {
+    const text = await file.text();
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new Error("That file isn't valid JSON.");
+    }
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("That doesn't look like a saved rolls file.");
+    }
+
+    const isNamedRoll = (roll) => roll && typeof roll.name === "string" && roll.name.trim() !== "";
+
+    const importedD20 = Array.isArray(parsed.d20Rolls) ? parsed.d20Rolls.filter(isNamedRoll) : [];
+    for (const roll of importedD20) {
+      const existingIndex = savedRolls.findIndex((r) => r.name === roll.name);
+      if (existingIndex === -1) savedRolls.push(roll);
+      else savedRolls[existingIndex] = roll;
+    }
+    if (importedD20.length > 0) {
+      localStorage.setItem(SAVED_ROLLS_STORAGE_KEY, JSON.stringify(savedRolls));
+      renderSavedRolls();
+    }
+
+    const importedDamage = Array.isArray(parsed.damageRolls) ? parsed.damageRolls.filter(isNamedRoll) : [];
+    for (const roll of importedDamage) {
+      const existingIndex = savedDamageRolls.findIndex((r) => r.name === roll.name);
+      if (existingIndex === -1) savedDamageRolls.push(roll);
+      else savedDamageRolls[existingIndex] = roll;
+    }
+    if (importedDamage.length > 0) {
+      localStorage.setItem(SAVED_DAMAGE_ROLLS_STORAGE_KEY, JSON.stringify(savedDamageRolls));
+      renderSavedDamageRolls();
+    }
+
+    if (importedD20.length === 0 && importedDamage.length === 0) {
+      throw new Error("No saved rolls found in that file.");
+    }
+
+    setStatus(
+      els.globalStatus,
+      `Imported ${importedD20.length} d20 roll(s) and ${importedDamage.length} damage roll(s).`,
+      false,
+    );
+  } catch (err) {
+    setStatus(els.globalStatus, err.message, true);
+  } finally {
+    els.importSavedRollsBtn.disabled = false;
+  }
 });
 
 const CLEAR_SAVED_ROLLS_LABEL = "Clear all saved rolls";

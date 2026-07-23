@@ -20,6 +20,10 @@
 
 const MAX_ACC_DIFF = 20;
 const MAX_DAMAGE_DICE = 50;
+// Any text tacked onto the end of a roll expression that isn't recognized
+// dice/keyword syntax becomes a title for the roll (e.g. "d20 + 3 Rifle")
+// rather than a parse error -- capped so it can't turn into a huge message.
+const MAX_TITLE_LENGTH = 30;
 
 export class LancerError extends Error {}
 
@@ -218,7 +222,7 @@ function parseRollExpression(expr) {
   let crit = false;
   let overkill = false;
   let combatDrill = false;
-  const unrecognized = [];
+  const titleWords = [];
 
   for (const [sign, word] of tokens) {
     const signedValue = sign === "-" ? -1 : 1;
@@ -266,11 +270,12 @@ function parseRollExpression(expr) {
       continue;
     }
 
-    unrecognized.push(word);
+    titleWords.push(word);
   }
 
-  if (unrecognized.length > 0) {
-    throw new LancerError(`Didn't understand: ${unrecognized.join(", ")}`);
+  const title = titleWords.join(" ");
+  if (title.length > MAX_TITLE_LENGTH) {
+    throw new LancerError(`Title must be at most ${MAX_TITLE_LENGTH} characters.`);
   }
 
   const d20Terms = diceTerms.filter((t) => t[1] === 20);
@@ -283,6 +288,7 @@ function parseRollExpression(expr) {
       modifier: flatTotal,
       accuracy: accuracyTotal,
       difficulty: difficultyTotal,
+      title,
     };
   }
 
@@ -293,16 +299,23 @@ function parseRollExpression(expr) {
     crit,
     overkill,
     combatDrill,
+    title,
   };
 }
 
-// Mirrors perform_roll().
+// Mirrors perform_roll(): the returned result carries a "title" over from
+// parsing (trailing non-syntax words in expr, e.g. "Rifle" in
+// "d20 + 3 Rifle").
 export function performRoll(expr) {
   const parsed = parseRollExpression(expr);
+  let result;
   if (parsed.mode === "check") {
-    return rollD20Check(parsed.modifier, parsed.accuracy, parsed.difficulty);
+    result = rollD20Check(parsed.modifier, parsed.accuracy, parsed.difficulty);
+  } else {
+    result = rollDamage(parsed.diceTerms, parsed.flat, parsed.crit, parsed.overkill, parsed.combatDrill);
   }
-  return rollDamage(parsed.diceTerms, parsed.flat, parsed.crit, parsed.overkill, parsed.combatDrill);
+  result.title = parsed.title;
+  return result;
 }
 
 // Mirrors result_to_json_safe() -- converts Sets (kept_indices) to sorted
@@ -410,8 +423,12 @@ function formatRollDiscord(result) {
 
 const DICE_NOTATION_RE = /\d+D\d+(?:K[HL]\d+)?/g;
 
-// Mirrors format_roll_discord_shouted().
+// Mirrors format_roll_discord_shouted(). The title (if any) is a name the
+// player chose -- like the pairing code or a player's own name, it's data,
+// not the bot "speaking", so it's prepended after shouting rather than
+// swept into the all-caps treatment.
 export function formatRollDiscordShouted(result) {
   const shouted = formatRollDiscord(result).toUpperCase();
-  return shouted.replace(DICE_NOTATION_RE, (m) => m.toLowerCase());
+  const fixed = shouted.replace(DICE_NOTATION_RE, (m) => m.toLowerCase());
+  return result.title ? `**${result.title}**\n${fixed}` : fixed;
 }

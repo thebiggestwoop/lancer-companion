@@ -18,6 +18,10 @@ import re
 # actual play never gets close to this.
 MAX_ACC_DIFF = 20
 MAX_DAMAGE_DICE = 50
+# Any text tacked onto the end of a roll expression that isn't recognized
+# dice/keyword syntax becomes a title for the roll (e.g. "d20 + 3 Rifle")
+# rather than a parse error -- capped so it can't turn into a huge message.
+MAX_TITLE_LENGTH = 30
 
 
 class LancerError(Exception):
@@ -243,6 +247,11 @@ def parse_roll_expression(expr):
     actually rolled for damage. In check expressions, a bare "d<N>" for any
     size other than 20 has no other meaning, so it doubles as Difficulty
     notation -- e.g. "d20 + 3 d2" is +3 modifier, 2 Difficulty.
+
+    Any words that aren't recognized dice/keyword syntax are collected (in
+    the order they appear) and joined into a "title" for the roll instead
+    of being a parse error -- e.g. "d20 + 3 Rifle" is +3 modifier, titled
+    "Rifle". Capped at MAX_TITLE_LENGTH characters.
     """
     tokens = _TOKEN_RE.findall(expr)
     if not tokens:
@@ -254,7 +263,7 @@ def parse_roll_expression(expr):
     crit = False
     overkill = False
     combat_drill = False
-    unrecognized = []
+    title_words = []
 
     for sign, word in tokens:
         signed = -1 if sign == "-" else 1
@@ -295,10 +304,11 @@ def parse_roll_expression(expr):
             flat_total += signed * int(word)
             continue
 
-        unrecognized.append(word)
+        title_words.append(word)
 
-    if unrecognized:
-        raise LancerError(f"Didn't understand: {', '.join(unrecognized)}")
+    title = " ".join(title_words)
+    if len(title) > MAX_TITLE_LENGTH:
+        raise LancerError(f"Title must be at most {MAX_TITLE_LENGTH} characters.")
 
     d20_terms = [t for t in dice_terms if t[1] == 20]
     other_dice_terms = [t for t in dice_terms if t[1] != 20]
@@ -311,6 +321,7 @@ def parse_roll_expression(expr):
             "modifier": flat_total,
             "accuracy": accuracy_total,
             "difficulty": difficulty_total,
+            "title": title,
         }
 
     return {
@@ -320,19 +331,25 @@ def parse_roll_expression(expr):
         "crit": crit,
         "overkill": overkill,
         "combat_drill": combat_drill,
+        "title": title,
     }
 
 
 def perform_roll(expr):
     """Parses expr and rolls it, returning whatever roll_d20_check() or
-    roll_damage() returns (each tagged with "mode"). Raises LancerError on
-    anything invalid, from parsing or from the roll itself."""
+    roll_damage() returns (each tagged with "mode", plus a "title" carried
+    over from parsing -- trailing non-syntax words in expr, e.g. "Rifle" in
+    "d20 + 3 Rifle"). Raises LancerError on anything invalid, from parsing
+    or from the roll itself."""
     parsed = parse_roll_expression(expr)
     if parsed["mode"] == "check":
-        return roll_d20_check(parsed["modifier"], parsed["accuracy"], parsed["difficulty"])
-    return roll_damage(
-        parsed["dice_terms"], parsed["flat"], parsed["crit"], parsed["overkill"], parsed["combat_drill"]
-    )
+        result = roll_d20_check(parsed["modifier"], parsed["accuracy"], parsed["difficulty"])
+    else:
+        result = roll_damage(
+            parsed["dice_terms"], parsed["flat"], parsed["crit"], parsed["overkill"], parsed["combat_drill"]
+        )
+    result["title"] = parsed["title"]
+    return result
 
 
 def result_to_json_safe(result):
@@ -587,6 +604,12 @@ def format_roll_discord_shouted(result):
     """format_roll_discord(), but in all caps -- the bot speaks its roll
     results in all caps (same text either way, Discord command or Owlbear
     extension), except dice notation ("2d6", "1d20", "6d6kh1", ...) stays
-    lowercase so it still reads as dice notation rather than "2D6"/"6D6KH1"."""
+    lowercase so it still reads as dice notation rather than "2D6"/"6D6KH1".
+
+    The title (if any) is a name the player chose -- like the pairing code
+    or a player's own name, it's data, not the bot "speaking" -- so it's
+    prepended after shouting rather than swept into the all-caps treatment."""
     shouted = format_roll_discord(result).upper()
-    return _DICE_NOTATION_RE.sub(lambda m: m.group(0).lower(), shouted)
+    fixed = _DICE_NOTATION_RE.sub(lambda m: m.group(0).lower(), shouted)
+    title = result.get("title")
+    return f"**{title}**\n{fixed}" if title else fixed
