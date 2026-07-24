@@ -4,8 +4,6 @@ A dice-rolling companion for the *Lancer* tabletop RPG. Lancer Nav is two indepe
 
 **Add the bot to Discord:** [Add to Discord](https://discord.com/oauth2/authorize?client_id=1528810293663371464&scope=bot&permissions=330752) — then run `l!h` in any channel for the command list, or `l!link` to pair the Owlbear extension.
 
-The link requests View Channels, Send Messages, Read Message History, and Use External Emojis. Without these, the bot can join a server but stay silent in channels where `@everyone` doesn't already have them — in particular, the dice-face emoji won't render without Use External Emojis, since they live on a different application than whichever server you invite the bot to.
-
 **Install the Owlbear extension:** in Owlbear Rodeo, open the Extensions panel → **Add custom extension** → paste `https://lancer-owlbear.heruv.uk/manifest.json`.
 
 Legal: [Terms of Service](https://lancer-owlbear.heruv.uk/terms.html) · [Privacy Policy](https://lancer-owlbear.heruv.uk/privacy.html)
@@ -22,7 +20,7 @@ Legal: [Terms of Service](https://lancer-owlbear.heruv.uk/terms.html) · [Privac
 
 ## The Discord bot
 
-Uses its own bot application and a distinct command prefix (`l!`), so it can coexist with other bots in the same server without command collisions.
+Uses its own bot application and a distinct command prefix (`l!` - that's a lower case "L"), so it can coexist with other bots in the same server without command collisions.
 
 ### Commands
 
